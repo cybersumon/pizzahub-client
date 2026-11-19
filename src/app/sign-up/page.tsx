@@ -59,7 +59,47 @@ export default function SignUpPage() {
         return;
       }
 
-      router.replace("/sign-in");
+
+      // ===========================================
+// REGISTRATION SUCCESS — SESSION CHECK
+// ===========================================
+
+// Registration-এর পরে active session আছে কি না যাচাই।
+const sessionResult = await authClient.getSession();
+
+// Better Auth-এর default autoSignIn enabled থাকলে
+// registration সফল হওয়ার পর session পাওয়া উচিত।
+if (!sessionResult.data?.user) {
+  // Account তৈরি হলেও session না পাওয়া গেলে
+  // ভুলভাবে homepage বা restaurant setup-এ পাঠাব না।
+  setError(
+    "Account created successfully, but you are not signed in. Please sign in to continue."
+  );
+  return;
+}
+
+// Account type অনুযায়ী destination নির্ধারণ করছি।
+const destination =
+  accountType === "restaurant"
+    ? "/restaurant/setup"
+    : "/";
+
+// Full-page navigation ব্যবহার করছি, কারণ
+// আমাদের Sign Up একটি intercepted modal route।
+// এতে পুরোনো auth modal slot reset হবে এবং
+// destination page fresh session পাবে।
+window.location.replace(destination);
+return;
+
+       if (accountType === "restaurant") {
+        // if Restaurant go to onboarding page.
+        router.replace("/restaurant/setup");
+      } else {
+        // if Customer go to homepage.
+        router.replace("/");
+      }
+
+      // new session information refresh
       router.refresh();
     } catch {
       setError("Unable to connect to the authentication server.");
