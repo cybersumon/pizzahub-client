@@ -49,7 +49,7 @@ const categories: PizzaCategory[] = [
 
 export default function PizzaCategories() {
   return (
-    <section className="bg-[#FFF7ED] py-20 lg:py-24">
+    <section className="bg-[#FFF7ED] py-20 lg:py-10">
 
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="mx-auto mb-12 max-w-2xl text-center">
