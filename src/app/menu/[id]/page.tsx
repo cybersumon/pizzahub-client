@@ -5,6 +5,9 @@ import { MapPin, Store, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { menuItems } from "@/data/menu-items";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+
+export const instant = false;
+
 interface ItemDetailsPageProps {
   params: Promise<{ id: string }>;
 }

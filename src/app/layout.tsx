@@ -21,11 +21,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  authModal,
+}: Readonly<{
+  children: React.ReactNode;
+
+  authModal: React.ReactNode;
+}>) {
   return (
     <html lang="en">
       <body className={`${outfit.variable} ${inter.variable} antialiased`}>
         {children}
+         {authModal}
       </body>
     </html>
   );
