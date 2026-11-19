@@ -1,8 +1,8 @@
 "use client";
+
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
-// ShadCN Dialog components।
 import {
   Dialog,
   DialogContent,
@@ -10,59 +10,43 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Modal-এর props।
 interface AuthModalProps {
   children: ReactNode;
   title: string;
 }
 
-// Reusable Sign In / Sign Up modal।
+// Sign In / Sign Up reusable popup।
 export default function AuthModal({
   children,
   title,
 }: AuthModalProps) {
   const router = useRouter();
 
-  function closeModal() {
-    router.back();
-  }
-
   return (
     <Dialog
-      open
+      open={true}
       onOpenChange={(isOpen) => {
-        if (!isOpen) closeModal();
+        if (!isOpen) {
+          router.back();
+        }
       }}
     >
       <DialogContent
-        className="
-          max-h-[90dvh]
-          w-[calc(100vw-24px)]
-          max-w-md
-          overflow-y-auto
-          rounded-[28px]
-          border border-orange-100
-          bg-white
-          p-0
-          shadow-2xl
-          sm:max-w-md
 
-          [&_main]:!min-h-0
-          [&_main]:!bg-transparent
-          [&_main]:!p-0
-
-          [&_main>div]:!w-full
-          [&_main>div]:!max-w-none
-          [&_main>div]:!rounded-none
-          [&_main>div]:!border-0
-          [&_main>div]:!shadow-none
-        "
+        className="max-h-[92dvh] gap-0 overflow-y-auto rounded-3xl border-0 bg-white p-0 shadow-2xl"
+        style={{
+          width: "calc(100vw - 24px)",
+          maxWidth: "960px",
+        }}
       >
+        {/* Accessibility title */}
         <DialogTitle className="sr-only">
           {title}
         </DialogTitle>
 
         <DialogDescription className="sr-only">
-          Authenticate with your PizzaHub account.
+          PizzaHub account authentication.
         </DialogDescription>
         {children}
       </DialogContent>
