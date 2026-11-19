@@ -1,4 +1,3 @@
-
 import type { MenuItem } from "@/components/menu/MenuItemCard";
 
 export const menuItems: MenuItem[] = [
@@ -8,9 +7,9 @@ export const menuItems: MenuItem[] = [
     category: "Classic Pizzas",
     price: 599,
     image: "/images/pizzas/margherita.jpg",
-    vendorName: "Pizza Palace",
-    location: "Dhanmondi, Dhaka",
-    isPremium: true,
+    vendorName: "PizzaHub Signature",
+    location: "Dhanmondi 27, Dhaka",
+    subscriptionPlan: "premium_plus",
   },
   {
     id: "2",
@@ -20,7 +19,7 @@ export const menuItems: MenuItem[] = [
     image: "/images/pizzas/pepperoni.jpg",
     vendorName: "Urban Slice",
     location: "Gulshan, Dhaka",
-    isPremium: false,
+    subscriptionPlan: "free",
   },
   {
     id: "3",
@@ -30,7 +29,7 @@ export const menuItems: MenuItem[] = [
     image: "/images/pizzas/veggie.jpg",
     vendorName: "Green Oven",
     location: "Banani, Dhaka",
-    isPremium: true,
+    subscriptionPlan: "premium",
   },
   {
     id: "4",
@@ -40,7 +39,7 @@ export const menuItems: MenuItem[] = [
     image: "/images/pizzas/bbq-chicken.jpg",
     vendorName: "Firewood Kitchen",
     location: "Uttara, Dhaka",
-    isPremium: true,
+    subscriptionPlan: "premium_plus",
   },
   {
     id: "5",
@@ -50,7 +49,7 @@ export const menuItems: MenuItem[] = [
     image: "/images/pizzas/meat-lovers.jpg",
     vendorName: "Pizza Factory",
     location: "Mirpur, Dhaka",
-    isPremium: false,
+    subscriptionPlan: "free",
   },
   {
     id: "6",
@@ -60,7 +59,7 @@ export const menuItems: MenuItem[] = [
     image: "/images/pizzas/four-cheese.jpg",
     vendorName: "Cheese House",
     location: "Mohammadpur, Dhaka",
-    isPremium: true,
+    subscriptionPlan: "premium",
   },
 ];
 

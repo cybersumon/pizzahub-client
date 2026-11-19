@@ -128,3 +128,71 @@
     @apply font-sans;
   }
 }
+
+/* ==============================================
+   PIZZAHUB PREMIUM+ — SIGNATURE CURVED CORNER
+   ============================================== */
+
+/* Premium+ Popup-এর বাইরের shell। */
+.pizzahub-premium-dialog-shell {
+  /* Dialog-এর background inner card নিয়ন্ত্রণ করবে। */
+  background: transparent;
+
+  /* ShadCN-এর default border/shadow সরাচ্ছি। */
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* Reference image-এর মতো special dialog shape। */
+.pizzahub-slice-shape {
+  /* Rounded corner-এর জন্য hidden content। */
+  overflow: hidden;
+
+  /* Premium cream-colored background। */
+  background: #fff9f2;
+
+  /* অন্য তিনটি corner normal rounded। */
+  border-top-left-radius: 34px;
+  border-top-right-radius: 34px;
+  border-bottom-right-radius: 34px;
+
+  /* Bottom-left corner-এ smooth, larger curved cut।
+     72px = horizontal curve extent।
+     68px = vertical curve extent। */
+  border-bottom-left-radius: 72px 68px;
+
+  /* Popup-এর নিচে soft floating shadow। */
+  box-shadow: 0 24px 65px rgba(35, 18, 12, 0.22);
+}
+
+/* Responsive: Mobile-এ corner ছোট হবে। */
+@media (max-width: 639px) {
+  .pizzahub-slice-shape {
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border-bottom-right-radius: 24px;
+
+    /* ছোট screen-এ corner proportional রাখছি। */
+    border-bottom-left-radius: 48px 46px;
+  }
+}
+
+/* ShadCN-এর existing close button। */
+.pizzahub-premium-dialog-shell > button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 50;
+
+  /* Reference-এর মতো circular white close button। */
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: #fffaf5;
+  color: #2a1b15;
+  opacity: 1;
+
+  /* Light floating shadow। */
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
