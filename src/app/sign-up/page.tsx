@@ -78,11 +78,14 @@ if (!sessionResult.data?.user) {
   return;
 }
 
-// Account type অনুযায়ী destination নির্ধারণ করছি।
+// Restaurant হলে onboarding, Customer হলে dashboard।
 const destination =
   accountType === "restaurant"
     ? "/restaurant/setup"
-    : "/";
+    : "/dashboard/customer";
+
+window.location.replace(destination);
+return;
 
 // Full-page navigation ব্যবহার করছি, কারণ
 // আমাদের Sign Up একটি intercepted modal route।

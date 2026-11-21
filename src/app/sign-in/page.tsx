@@ -1,8 +1,14 @@
 "use client";
 
+
+// Backend থেকে verified role এবং dashboard path।
+import {
+  getUserProfile,
+  getDashboardPath,
+} from "@/lib/user-profile";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, Mail, ArrowRight } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
@@ -10,7 +16,7 @@ import AuthPanel from "@/components/auth/AuthPanel";
 
 // Customer, Vendor & Admin — login form।
 export default function SignInPage() {
-  const router = useRouter();
+  // const router = useRouter();
 
   // Email/password state।
   const [email, setEmail] = useState("");
@@ -41,8 +47,14 @@ export default function SignInPage() {
         return;
       }
 
-      router.replace("/");
-      router.refresh();
+      // Login successful হওয়ার পর backend থেকে user role নিচ্ছি।
+      const profile = await getUserProfile();
+
+      // Customer, Vendor অথবা Admin-এর সঠিক dashboard।
+      const destination = getDashboardPath(profile.role);
+
+      // পুরোনো auth popup state clear করে dashboard খুলবে।
+      window.location.replace(destination);
     } catch {
       setError("Could not connect to the authentication server.");
     } finally {
