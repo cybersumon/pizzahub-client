@@ -64,21 +64,15 @@ export default function SignUpPage() {
 // REGISTRATION SUCCESS — SESSION CHECK
 // ===========================================
 
-// Registration-এর পরে active session আছে কি না যাচাই।
 const sessionResult = await authClient.getSession();
 
-// Better Auth-এর default autoSignIn enabled থাকলে
-// registration সফল হওয়ার পর session পাওয়া উচিত।
 if (!sessionResult.data?.user) {
-  // Account তৈরি হলেও session না পাওয়া গেলে
-  // ভুলভাবে homepage বা restaurant setup-এ পাঠাব না।
   setError(
     "Account created successfully, but you are not signed in. Please sign in to continue."
   );
   return;
 }
 
-// Restaurant হলে onboarding, Customer হলে dashboard।
 const destination =
   accountType === "restaurant"
     ? "/restaurant/setup"
@@ -87,10 +81,6 @@ const destination =
 window.location.replace(destination);
 return;
 
-// Full-page navigation ব্যবহার করছি, কারণ
-// আমাদের Sign Up একটি intercepted modal route।
-// এতে পুরোনো auth modal slot reset হবে এবং
-// destination page fresh session পাবে।
 window.location.replace(destination);
 return;
 

@@ -19,13 +19,11 @@ export default function CustomerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Backend থেকে verified customer profile load।
   useEffect(() => {
     async function loadProfile() {
       try {
         const user = await getUserProfile();
 
-        // Customer ছাড়া dashboard access নয়।
         if (user.role !== "customer") {
           setError("Customer access required.");
           return;
@@ -46,7 +44,6 @@ export default function CustomerDashboardPage() {
     void loadProfile();
   }, []);
 
-  // Authentication session বন্ধ করছি।
   async function handleLogout() {
     try {
       const result = await authClient.signOut();

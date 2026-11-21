@@ -1,5 +1,7 @@
 "use client";
 
+import NavbarAuth from "@/components/auth/NavbarAuth";
+
 import { useState } from "react";
 import Link from "next/link";
 import { Menu, X, Pizza, ArrowUpRight } from "lucide-react";
@@ -37,16 +39,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <Link href="/sign-in">
-            <Button variant="ghost">Sign In</Button>
-          </Link>
-          <Link href="/sign-up">
-            <Button className="rounded-full bg-[#D62828] px-6 text-white hover:bg-[#B91C1C]">
-              Sign Up <ArrowUpRight size={16} />
-            </Button>
-          </Link>
-        </div>
+        <NavbarAuth />
 
         <button
           type="button"

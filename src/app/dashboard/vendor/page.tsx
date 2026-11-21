@@ -22,20 +22,17 @@ import {
 } from "@/lib/user-profile";
 
 export default function VendorDashboardPage() {
-  // Backend থেকে পাওয়া verified profile।
   const [profile, setProfile] =
     useState<UserProfile | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Page open হলে user profile load হবে।
   useEffect(() => {
     async function loadProfile() {
       try {
         const user = await getUserProfile();
 
-        // Vendor account ছাড়া dashboard access নয়।
         if (user.role !== "vendor") {
           setError("Vendor access required.");
           return;
@@ -81,7 +78,6 @@ export default function VendorDashboardPage() {
     );
   }
 
-  // Unauthorized অথবা API error।
   if (!profile || !profile.restaurant) {
     return (
       <main className="p-12 text-center">
@@ -102,7 +98,6 @@ export default function VendorDashboardPage() {
   // Verified restaurant information।
   const restaurant = profile.restaurant;
 
-  // Subscription অনুযায়ী menu limit।
   const menuLimit =
     restaurant.plan === "free" ? "3" : "Unlimited";
 
@@ -250,6 +245,16 @@ export default function VendorDashboardPage() {
                   : "Restaurant approval required."}
               </p>
             </div>
+
+            {/* Approved vendor-ই Menu Management-এ যেতে পারবে। */}
+{profile.canManageMenu && (
+  <Link
+    href="/dashboard/vendor/menu"
+    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#D62828] px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700"
+  >
+    Manage Menu →
+  </Link>
+)}
 
             {/* Customer Orders */}
             <div className="rounded-xl border border-stone-200 p-5">

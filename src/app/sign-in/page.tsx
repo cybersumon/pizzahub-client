@@ -1,7 +1,5 @@
 "use client";
 
-
-// Backend থেকে verified role এবং dashboard path।
 import {
   getUserProfile,
   getDashboardPath,
@@ -46,14 +44,10 @@ export default function SignInPage() {
         setError(result.error.message || "Unable to sign in.");
         return;
       }
-
-      // Login successful হওয়ার পর backend থেকে user role নিচ্ছি।
       const profile = await getUserProfile();
 
-      // Customer, Vendor অথবা Admin-এর সঠিক dashboard।
       const destination = getDashboardPath(profile.role);
 
-      // পুরোনো auth popup state clear করে dashboard খুলবে।
       window.location.replace(destination);
     } catch {
       setError("Could not connect to the authentication server.");

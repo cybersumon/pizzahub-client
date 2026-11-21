@@ -28,15 +28,12 @@ export interface UserProfile {
   } | null;
 }
 
-// Authenticated user's profile load করার function।
 export async function getUserProfile(): Promise<UserProfile> {
   const response = await fetch(`${API_URL}/api/users/me`, {
     method: "GET",
 
-    // Better Auth session cookie পাঠাচ্ছি।
     credentials: "include",
 
-    // পুরোনো role বা restaurant status cache হবে না।
     cache: "no-store",
   });
 
@@ -52,7 +49,6 @@ export async function getUserProfile(): Promise<UserProfile> {
   return result.data;
 }
 
-// Role অনুযায়ী dashboard URL নির্ধারণ।
 export function getDashboardPath(role: UserRole): string {
   switch (role) {
     case "admin":

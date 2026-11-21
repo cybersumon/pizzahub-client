@@ -22,7 +22,6 @@ const API_URL =
   process.env.NEXT_PUBLIC_BETTER_AUTH_URL ??
   "http://localhost:7000";
 
-// Restaurant document-এর frontend type।
 interface Restaurant {
   _id: string;
   ownerId: string;
@@ -34,7 +33,6 @@ interface Restaurant {
   plan: string;
 }
 
-// Admin API-এর response type।
 interface RestaurantListResponse {
   success: boolean;
   message?: string;
@@ -46,7 +44,7 @@ export default function AdminRestaurantsPage() {
   // Current Better Auth session।
   const { data: session, isPending } = authClient.useSession();
 
-  // API-এর restaurant list।
+  // API restaurant list।
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
 
   // Page state।
@@ -63,7 +61,7 @@ export default function AdminRestaurantsPage() {
     setError("");
 
     try {
-      // Server নিজে Admin permission যাচাই করবে।
+      // Server Admin permission verify 
       const response = await fetch(
         `${API_URL}/api/admin/restaurants?status=pending`,
         {
@@ -92,7 +90,6 @@ export default function AdminRestaurantsPage() {
     }
   }, []);
 
-  // User logged-in থাকলে list load করব।
   useEffect(() => {
     if (!isPending && session?.user) {
       void loadRestaurants();
@@ -113,7 +110,6 @@ export default function AdminRestaurantsPage() {
     setMessage("");
 
     try {
-      // Admin authorization backend-এ হবে।
       const response = await fetch(
         `${API_URL}/api/admin/restaurants/${restaurantId}/status`,
         {
@@ -137,7 +133,6 @@ export default function AdminRestaurantsPage() {
         );
       }
 
-      // Successful review-এর পরে pending list থেকে সরাব।
       setRestaurants((current) =>
         current.filter((item) => item._id !== restaurantId)
       );
@@ -156,7 +151,6 @@ export default function AdminRestaurantsPage() {
     }
   }
 
-  // Session load হওয়ার সময়।
   if (isPending) {
     return (
       <main className="p-8 text-center">
@@ -209,7 +203,6 @@ export default function AdminRestaurantsPage() {
           </div>
         )}
 
-        {/* API permission অথবা network error। */}
         {error && (
           <div role="alert" className="mb-5 rounded-2xl bg-red-50 p-4 text-red-700">
             {error}
@@ -222,7 +215,6 @@ export default function AdminRestaurantsPage() {
             Loading restaurants...
           </div>
         ) : restaurants.length === 0 && !error ? (
-          // Pending restaurant না থাকলে।
           <div className="rounded-3xl bg-white p-12 text-center shadow-sm">
             <CheckCircle2
               size={38}
@@ -300,7 +292,6 @@ export default function AdminRestaurantsPage() {
                     type="button"
                     disabled={updatingId !== null}
                     onClick={() => {
-                      // Reject করার আগে confirmation।
                       if (
                         window.confirm(
                           `Reject ${restaurant.name}?`
