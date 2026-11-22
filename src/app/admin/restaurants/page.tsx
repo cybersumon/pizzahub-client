@@ -1,115 +1,217 @@
 "use client";
 
-// React hooks।
-import { useCallback, useEffect, useState } from "react";
-
-// Next.js navigation।
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
-// UI icons।
 import {
-  CheckCircle2,
-  Clock3,
   Store,
+  Users,
+  CheckCircle2,
   XCircle,
+  Clock3,
+  RefreshCw,
+  MapPin,
+  Phone,
+  ArrowRight,
 } from "lucide-react";
 
-// Better Auth session।
-import { authClient } from "@/lib/auth-client";
+// ============================================
+// PIZZAHUB BACKEND CONFIGURATION
+// ============================================
 
-// Express backend URL।
+// Express Backend API URL।
 const API_URL =
-  process.env.NEXT_PUBLIC_BETTER_AUTH_URL ??
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
   "http://localhost:7000";
 
+// ============================================
+// TYPES
+// ============================================
+
+// Restaurant approval status।
+type RestaurantStatus =
+  | "pending"
+  | "approved"
+  | "rejected";
+
+// Restaurant database structure।
 interface Restaurant {
-  _id: string;
-  ownerId: string;
+  _id?: string;
+  id?: string;
   name: string;
   address: string;
   phone: string;
-  description: string;
-  status: "pending" | "approved" | "rejected";
+  description?: string;
+  status: RestaurantStatus;
   plan: string;
+  ownerId?: string;
+  createdAt?: string;
 }
 
-interface RestaurantListResponse {
+// API response structure।
+interface RestaurantsResponse {
   success: boolean;
   message?: string;
   data?: Restaurant[];
+  restaurants?: Restaurant[];
 }
 
-// Admin Restaurant Approval page।
+// ============================================
+// ADMIN RESTAURANT APPROVAL PAGE
+// ============================================
+
 export default function AdminRestaurantsPage() {
-  // Current Better Auth session।
-  const { data: session, isPending } = authClient.useSession();
+  // ==========================================
+  // STATES
+  // ==========================================
 
-  // API restaurant list।
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  // Database restaurants।
+  const [restaurants, setRestaurants] = useState<
+    Restaurant[]
+  >([]);
 
-  // Page state।
+  // Default filter: Pending।
+  const [status, setStatus] =
+    useState<RestaurantStatus>("pending");
+
+  // API loading state।
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // Approve/Reject action loading।
+  const [actionId, setActionId] = useState<string | null>(
+    null
+  );
+
+  // Notification states।
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // =======================================
-  // LOAD PENDING RESTAURANTS
-  // =======================================
-  const loadRestaurants = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  // Refresh trigger।
+  const [refreshKey, setRefreshKey] = useState(0);
 
-    try {
-      // Server Admin permission verify 
-      const response = await fetch(
-        `${API_URL}/api/admin/restaurants?status=pending`,
-        {
-          credentials: "include",
-        }
-      );
-
-      const result: RestaurantListResponse =
-        await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(
-          result.message || "Unable to load restaurants."
-        );
-      }
-
-      setRestaurants(result.data ?? []);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to connect to server."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // ==========================================
+  // FETCH RESTAURANTS FROM BACKEND
+  // ==========================================
 
   useEffect(() => {
-    if (!isPending && session?.user) {
-      void loadRestaurants();
-    } else if (!isPending) {
-      setLoading(false);
-    }
-  }, [isPending, session?.user, loadRestaurants]);
+    const controller = new AbortController();
 
-  // =======================================
-  // APPROVE / REJECT ACTION
-  // =======================================
-  async function reviewRestaurant(
-    restaurantId: string,
-    status: "approved" | "rejected"
-  ) {
-    setUpdatingId(restaurantId);
+    async function fetchRestaurants() {
+      try {
+        // Admin API request with Better Auth cookie।
+        const response = await fetch(
+          `${API_URL}/api/admin/restaurants?status=${status}`,
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+            signal: controller.signal,
+          }
+        );
+
+        // Backend response।
+        const result: RestaurantsResponse =
+          await response.json();
+
+        // Backend error handling।
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message ||
+              "Unable to load restaurants."
+          );
+        }
+
+        // Backend data array।
+        const restaurantList =
+          result.data ?? result.restaurants ?? [];
+
+        // Request cancel না হলে state update।
+        if (!controller.signal.aborted) {
+          setRestaurants(
+            Array.isArray(restaurantList)
+              ? restaurantList
+              : []
+          );
+
+          setError("");
+          setLoading(false);
+        }
+      } catch (err) {
+        // Cancelled request ignore।
+        if (controller.signal.aborted) return;
+
+        setRestaurants([]);
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to connect to PizzaHub server."
+        );
+
+        setLoading(false);
+      }
+    }
+
+    // Asynchronous API call।
+    void fetchRestaurants();
+
+    // Cleanup।
+    return () => {
+      controller.abort();
+    };
+  }, [status, refreshKey]);
+
+  // ==========================================
+  // CHANGE RESTAURANT STATUS FILTER
+  // ==========================================
+
+  function changeStatus(nextStatus: RestaurantStatus) {
+    if (nextStatus === status) return;
+
+    setLoading(true);
     setError("");
-    setMessage("");
+    setSuccess("");
+    setRestaurants([]);
+
+    setStatus(nextStatus);
+  }
+
+  // ==========================================
+  // REFRESH RESTAURANTS
+  // ==========================================
+
+  function refreshRestaurants() {
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    setRefreshKey((previous) => previous + 1);
+  }
+
+  // ==========================================
+  // APPROVE / REJECT RESTAURANT
+  // ==========================================
+
+  async function updateRestaurantStatus(
+    restaurant: Restaurant,
+    newStatus: "approved" | "rejected"
+  ) {
+    const restaurantId =
+      restaurant.id ?? restaurant._id;
+
+    if (!restaurantId) {
+      setError("Restaurant ID is missing.");
+      return;
+    }
+
+    // Action processing।
+    setActionId(restaurantId);
+    setError("");
+    setSuccess("");
 
     try {
+      // Secure Admin API endpoint।
       const response = await fetch(
         `${API_URL}/api/admin/restaurants/${restaurantId}/status`,
         {
@@ -118,10 +220,13 @@ export default function AdminRestaurantsPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({
+            status: newStatus,
+          }),
         }
       );
 
+      // Backend response।
       const result: {
         success: boolean;
         message?: string;
@@ -129,190 +234,405 @@ export default function AdminRestaurantsPage() {
 
       if (!response.ok || !result.success) {
         throw new Error(
-          result.message || "Unable to update restaurant."
+          result.message ||
+            "Unable to update restaurant status."
         );
       }
 
-      setRestaurants((current) =>
-        current.filter((item) => item._id !== restaurantId)
+      // Success notification।
+      setSuccess(
+        newStatus === "approved"
+          ? `${restaurant.name} approved successfully.`
+          : `${restaurant.name} rejected successfully.`
       );
 
-      setMessage(
-        result.message || "Restaurant updated successfully."
-      );
+      // Current list refresh।
+      setLoading(true);
+      setRefreshKey((previous) => previous + 1);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to update restaurant."
+          : "Unable to update restaurant status."
       );
     } finally {
-      setUpdatingId(null);
+      setActionId(null);
     }
   }
 
-  if (isPending) {
-    return (
-      <main className="p-8 text-center">
-        Checking your session...
-      </main>
-    );
-  }
-
-  // Not logged in।
-  if (!session?.user) {
-    return (
-      <main className="min-h-screen bg-[#FFF9F2] p-8 text-center">
-        <h1 className="text-2xl font-bold">
-          Please Sign In
-        </h1>
-
-        <Link href="/sign-in" className="mt-4 inline-block text-red-600">
-          Sign In
-        </Link>
-      </main>
-    );
-  }
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
-    <main className="min-h-screen bg-[#FFF9F2] px-4 py-10">
-      <div className="mx-auto max-w-5xl">
+    <main className="bg-[#FFF9F2] px-4 py-8 sm:py-12">
+      <div className="mx-auto max-w-7xl">
 
-        {/* Admin dashboard heading। */}
-        <div className="mb-8">
-          <Link
-            href="/"
-            className="text-lg font-extrabold text-[#D62828]"
-          >
-            PizzaHub
-          </Link>
+        {/* ====================================
+            PAGE HEADER
+            ==================================== */}
 
-          <h1 className="mt-4 text-3xl font-extrabold text-stone-900">
-            Restaurant Approvals
-          </h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
 
-          <p className="mt-2 text-stone-500">
-            Review and manage pending restaurant applications.
-          </p>
-        </div>
+          <div>
+            <h1 className="text-3xl font-extrabold text-stone-900">
+              Restaurant Approvals
+            </h1>
 
-        {/* Success message। */}
-        {message && (
-          <div role="status" className="mb-5 rounded-2xl bg-green-50 p-4 text-green-800">
-            {message}
-          </div>
-        )}
-
-        {error && (
-          <div role="alert" className="mb-5 rounded-2xl bg-red-50 p-4 text-red-700">
-            {error}
-          </div>
-        )}
-
-        {/* Loading state। */}
-        {loading ? (
-          <div className="rounded-2xl bg-white p-8 text-center">
-            Loading restaurants...
-          </div>
-        ) : restaurants.length === 0 && !error ? (
-          <div className="rounded-3xl bg-white p-12 text-center shadow-sm">
-            <CheckCircle2
-              size={38}
-              className="mx-auto text-green-600"
-            />
-
-            <h2 className="mt-4 text-xl font-bold">
-              All caught up!
-            </h2>
-
-            <p className="mt-2 text-stone-500">
-              No pending restaurant applications.
+            <p className="mt-2 text-sm text-stone-500">
+              Review registered restaurants and manage
+              their approval requests.
             </p>
           </div>
-        ) : (
-          // Pending restaurant cards।
-          <div className="grid gap-5">
-            {restaurants.map((restaurant) => (
-              <article
-                key={restaurant._id}
-                className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm"
+
+          {/* Admin Users Management Link */}
+          <Link
+            href="/admin/users"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#D62828] px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+          >
+            <Users size={18} />
+            Manage Users
+            <ArrowRight size={17} />
+          </Link>
+
+        </div>
+
+        {/* ====================================
+            SUMMARY CARDS
+            ==================================== */}
+
+        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+
+          {/* Restaurants Count */}
+          <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
+            <Store
+              size={25}
+              className="text-[#D62828]"
+            />
+
+            <p className="mt-3 text-sm text-stone-500">
+              Restaurants in View
+            </p>
+
+            <p className="mt-2 text-3xl font-extrabold">
+              {loading ? "—" : restaurants.length}
+            </p>
+          </div>
+
+          {/* Selected Filter */}
+          <div className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
+            <Clock3
+              size={25}
+              className="text-amber-600"
+            />
+
+            <p className="mt-3 text-sm text-stone-500">
+              Current Filter
+            </p>
+
+            <p className="mt-2 text-lg font-extrabold capitalize">
+              {status}
+            </p>
+          </div>
+
+          {/* Approval Module */}
+          <div className="col-span-2 rounded-2xl border border-orange-100 bg-white p-5 shadow-sm sm:col-span-1">
+            <CheckCircle2
+              size={25}
+              className="text-green-600"
+            />
+
+            <p className="mt-3 text-sm text-stone-500">
+              Approval Management
+            </p>
+
+            <p className="mt-2 text-lg font-extrabold">
+              Active
+            </p>
+          </div>
+
+        </div>
+
+        {/* ====================================
+            RESTAURANT MANAGEMENT SECTION
+            ==================================== */}
+
+        <section className="mt-8 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm sm:p-6">
+
+          {/* Section Header */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+
+            <div>
+              <h2 className="text-xl font-extrabold text-stone-900">
+                Restaurant Applications
+              </h2>
+
+              <p className="mt-1 text-sm text-stone-500">
+                View and review restaurant registration requests.
+              </p>
+            </div>
+
+            {/* Refresh Button */}
+            <button
+              type="button"
+              onClick={refreshRestaurants}
+              disabled={loading || actionId !== null}
+              className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-600 transition hover:bg-stone-50 disabled:opacity-50"
+            >
+              <RefreshCw
+                size={17}
+                className={loading ? "animate-spin" : ""}
+              />
+
+              {loading ? "Loading..." : "Refresh"}
+            </button>
+
+          </div>
+
+          {/* ==================================
+              STATUS FILTER
+              ================================== */}
+
+          <div className="mt-6 flex flex-wrap gap-2">
+
+            {(
+              [
+                ["pending", "Pending"],
+                ["approved", "Approved"],
+                ["rejected", "Rejected"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => changeStatus(value)}
+                disabled={actionId !== null}
+                className={
+                  status === value
+                    ? "rounded-full bg-[#D62828] px-5 py-2.5 text-sm font-bold text-white"
+                    : "rounded-full bg-stone-100 px-5 py-2.5 text-sm font-bold text-stone-600 transition hover:bg-stone-200"
+                }
               >
-                <div className="flex flex-wrap items-start justify-between gap-4">
+                {label}
+              </button>
+            ))}
 
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Store size={21} className="text-[#D62828]" />
+          </div>
 
-                      <h2 className="text-xl font-extrabold text-stone-900">
-                        {restaurant.name}
-                      </h2>
+          {/* ==================================
+              ERROR MESSAGE
+              ================================== */}
+
+          {error && (
+            <div
+              role="alert"
+              className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            >
+              {error}
+            </div>
+          )}
+
+          {/* ==================================
+              SUCCESS MESSAGE
+              ================================== */}
+
+          {success && (
+            <div
+              role="status"
+              className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700"
+            >
+              {success}
+            </div>
+          )}
+
+          {/* ==================================
+              RESTAURANTS LIST
+              ================================== */}
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+
+              <RefreshCw
+                size={27}
+                className="animate-spin text-[#D62828]"
+              />
+
+              <p className="mt-4 text-sm font-medium text-stone-500">
+                Loading restaurants...
+              </p>
+
+            </div>
+          ) : error ? null : restaurants.length === 0 ? (
+
+            // Empty State।
+            <div className="py-16 text-center">
+
+              <Store
+                size={42}
+                className="mx-auto text-orange-300"
+              />
+
+              <h3 className="mt-4 text-xl font-extrabold text-stone-900">
+                No Restaurants Found
+              </h3>
+
+              <p className="mt-2 text-sm text-stone-500">
+                No {status} restaurant applications
+                are available.
+              </p>
+
+            </div>
+          ) : (
+
+            // Restaurant Cards।
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+
+              {restaurants.map((restaurant) => {
+                // Restaurant database ID।
+                const restaurantId =
+                  restaurant.id ?? restaurant._id ?? "";
+
+                const isUpdating =
+                  actionId === restaurantId;
+
+                return (
+                  <article
+                    key={restaurantId}
+                    className="rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-orange-200 hover:shadow-sm"
+                  >
+
+                    {/* =================================
+                        RESTAURANT HEADER
+                        ================================= */}
+
+                    <div className="flex items-start justify-between gap-3">
+
+                      <div>
+                        <h3 className="text-xl font-extrabold text-stone-900">
+                          {restaurant.name}
+                        </h3>
+
+                        <p className="mt-2 text-sm text-stone-500">
+                          Subscription:{" "}
+                          <span className="font-bold capitalize">
+                            {restaurant.plan}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* Approval Status */}
+                      <span
+                        className={
+                          restaurant.status === "approved"
+                            ? "rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700"
+                            : restaurant.status === "rejected"
+                              ? "rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700"
+                              : "rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700"
+                        }
+                      >
+                        {restaurant.status}
+                      </span>
+
                     </div>
 
-                    <p className="mt-3 text-sm text-stone-600">
-                      {restaurant.address}
-                    </p>
+                    {/* =================================
+                        RESTAURANT INFORMATION
+                        ================================= */}
 
-                    <p className="mt-1 text-sm text-stone-600">
-                      {restaurant.phone}
-                    </p>
+                    {/* Address */}
+                    <div className="mt-5 flex items-start gap-2 text-sm text-stone-600">
+                      <MapPin
+                        size={17}
+                        className="shrink-0 text-[#D62828]"
+                      />
 
+                      <span>{restaurant.address}</span>
+                    </div>
+
+                    {/* Phone */}
+                    <div className="mt-3 flex items-center gap-2 text-sm text-stone-600">
+                      <Phone
+                        size={17}
+                        className="shrink-0 text-[#D62828]"
+                      />
+
+                      <span>{restaurant.phone}</span>
+                    </div>
+
+                    {/* Description */}
                     {restaurant.description && (
-                      <p className="mt-3 text-sm text-stone-500">
+                      <p className="mt-4 text-sm leading-6 text-stone-500">
                         {restaurant.description}
                       </p>
                     )}
-                  </div>
 
-                  {/* Pending status badge। */}
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-2 text-xs font-bold text-amber-800">
-                    <Clock3 size={14} />
-                    Pending
-                  </span>
-                </div>
+                    {/* Registration Date */}
+                    {restaurant.createdAt && (
+                      <p className="mt-4 text-xs text-stone-400">
+                        Registered:{" "}
+                        {new Date(
+                          restaurant.createdAt
+                        ).toLocaleDateString("en-GB")}
+                      </p>
+                    )}
 
-                {/* Admin approval buttons। */}
-                <div className="mt-6 flex flex-wrap gap-3 border-t border-stone-100 pt-5">
+                    {/* =================================
+                        APPROVE / REJECT ACTIONS
+                        ================================= */}
 
-                  <button
-                    type="button"
-                    disabled={updatingId !== null}
-                    onClick={() =>
-                      void reviewRestaurant(
-                        restaurant._id,
-                        "approved"
-                      )
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
-                  >
-                    <CheckCircle2 size={17} />
-                    Approve
-                  </button>
+                    {restaurant.status === "pending" && (
+                      <div className="mt-6 grid grid-cols-2 gap-3 border-t border-stone-100 pt-5">
 
-                  <button
-                    type="button"
-                    disabled={updatingId !== null}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Reject ${restaurant.name}?`
-                        )
-                      ) {
-                        void reviewRestaurant(
-                          restaurant._id,
-                          "rejected"
-                        );
-                      }
-                    }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
-                  >
-                    <XCircle size={17} />
-                    Reject
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+                        {/* Approve Button */}
+                        <button
+                          type="button"
+                          disabled={actionId !== null}
+                          onClick={() =>
+                            void updateRestaurantStatus(
+                              restaurant,
+                              "approved"
+                            )
+                          }
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                        >
+                          <CheckCircle2 size={17} />
+
+                          {isUpdating
+                            ? "Updating..."
+                            : "Approve"}
+                        </button>
+
+                        {/* Reject Button */}
+                        <button
+                          type="button"
+                          disabled={actionId !== null}
+                          onClick={() =>
+                            void updateRestaurantStatus(
+                              restaurant,
+                              "rejected"
+                            )
+                          }
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+                        >
+                          <XCircle size={17} />
+
+                          {isUpdating
+                            ? "Updating..."
+                            : "Reject"}
+                        </button>
+
+                      </div>
+                    )}
+
+                  </article>
+                );
+              })}
+
+            </div>
+          )}
+
+        </section>
+
       </div>
     </main>
   );
