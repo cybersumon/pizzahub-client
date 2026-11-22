@@ -1,8 +1,20 @@
+
 "use client";
+
+// ============================================
+// PIZZAHUB — CUSTOMER DASHBOARD
+// ============================================
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Pizza, ShoppingBag, UserRound, LogOut } from "lucide-react";
+
+import {
+  Pizza,
+  ShoppingBag,
+  UserRound,
+  LogOut,
+  ArrowRight,
+} from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -11,18 +23,33 @@ import {
   type UserProfile,
 } from "@/lib/user-profile";
 
+// ============================================
+// MAIN CUSTOMER DASHBOARD
+// ============================================
+
 export default function CustomerDashboardPage() {
-  // Current user profile।
+  // ==========================================
+  // STATES
+  // ==========================================
+
   const [profile, setProfile] =
     useState<UserProfile | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // ==========================================
+  // LOAD CUSTOMER PROFILE
+  // ==========================================
+
   useEffect(() => {
+    let active = true;
+
     async function loadProfile() {
       try {
         const user = await getUserProfile();
+
+        if (!active) return;
 
         if (user.role !== "customer") {
           setError("Customer access required.");
@@ -31,18 +58,30 @@ export default function CustomerDashboardPage() {
 
         setProfile(user);
       } catch (err) {
+        if (!active) return;
+
         setError(
           err instanceof Error
             ? err.message
             : "Unable to load profile."
         );
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
     void loadProfile();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  // ==========================================
+  // LOGOUT
+  // ==========================================
 
   async function handleLogout() {
     try {
@@ -59,24 +98,34 @@ export default function CustomerDashboardPage() {
     }
   }
 
-  // Loading state।
+  // ==========================================
+  // LOADING STATE
+  // ==========================================
+
   if (loading) {
     return (
-      <main className="p-12 text-center">
-        Loading Customer Dashboard...
+      <main className="flex min-h-screen items-center justify-center bg-[#FFF9F2]">
+        <p className="text-sm font-medium text-stone-600">
+          Loading Customer Dashboard...
+        </p>
       </main>
     );
   }
 
-  // Unauthorized access।
+  // ==========================================
+  // UNAUTHORIZED ACCESS
+  // ==========================================
+
   if (!profile) {
     return (
-      <main className="p-12 text-center">
-        <p className="text-red-600">{error}</p>
+      <main className="flex min-h-screen flex-col items-center justify-center bg-[#FFF9F2] px-4 text-center">
+        <p className="text-lg font-bold text-red-600">
+          {error || "Customer profile unavailable."}
+        </p>
 
         <Link
           href="/sign-in"
-          className="mt-4 inline-block text-red-600"
+          className="mt-4 inline-block text-sm font-bold text-red-600 hover:underline"
         >
           Sign In
         </Link>
@@ -84,12 +133,18 @@ export default function CustomerDashboardPage() {
     );
   }
 
+  // ==========================================
+  // CUSTOMER DASHBOARD UI
+  // ==========================================
+
   return (
     <main className="min-h-screen bg-[#FFF9F2] px-4 py-8">
-
       <div className="mx-auto max-w-6xl">
 
-        {/* Dashboard header */}
+        {/* =====================================
+            DASHBOARD HEADER
+            ===================================== */}
+
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
 
           <div>
@@ -100,7 +155,7 @@ export default function CustomerDashboardPage() {
               PizzaHub
             </Link>
 
-            <h1 className="mt-3 text-3xl font-extrabold">
+            <h1 className="mt-3 text-3xl font-extrabold text-stone-900">
               Customer Dashboard
             </h1>
 
@@ -109,10 +164,11 @@ export default function CustomerDashboardPage() {
             </p>
           </div>
 
+          {/* Logout Button */}
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-600"
+            className="flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-50"
           >
             <LogOut size={17} />
             Logout
@@ -120,64 +176,124 @@ export default function CustomerDashboardPage() {
 
         </div>
 
+        {/* =====================================
+            ERROR MESSAGE
+            ===================================== */}
+
         {error && (
-          <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-red-700">
+          <p
+            role="alert"
+            className="mb-4 rounded-xl bg-red-50 p-4 text-red-700"
+          >
             {error}
           </p>
         )}
 
-        {/* Customer dashboard cards */}
+        {/* =====================================
+            CUSTOMER DASHBOARD CARDS
+            ===================================== */}
+
         <div className="grid gap-5 md:grid-cols-3">
 
-          {/* Account information */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <UserRound className="mb-4 text-red-600" />
+          {/* =================================
+              MY ACCOUNT CARD
+              ================================= */}
 
-            <h2 className="font-extrabold">
+          <div className="flex flex-col rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
+
+            <UserRound
+              size={25}
+              className="mb-4 text-red-600"
+            />
+
+            <h2 className="font-extrabold text-stone-900">
               My Account
             </h2>
 
-            <p className="mt-3 font-semibold">
+            <p className="mt-3 font-semibold text-stone-800">
               {profile.name}
             </p>
 
             <p className="mt-1 break-all text-sm text-stone-500">
               {profile.email}
             </p>
+
+            {/* Profile Management Link */}
+            <div className="mt-auto pt-5">
+              <Link
+                href="/profile"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-bold text-[#D62828] transition hover:bg-red-50"
+              >
+                Edit Profile
+                <ArrowRight size={17} />
+              </Link>
+            </div>
+
           </div>
 
-          {/* Customer Orders */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <ShoppingBag className="mb-4 text-red-600" />
+          {/* =================================
+              MY ORDERS CARD
+              ================================= */}
 
-            <h2 className="font-extrabold">
+          <div className="flex flex-col rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
+
+            <ShoppingBag
+              size={25}
+              className="mb-4 text-red-600"
+            />
+
+            <h2 className="font-extrabold text-stone-900">
               My Orders
             </h2>
 
-            <p className="mt-3 text-sm text-stone-500">
-              Order tracking will be available after
-              order management is implemented.
+            <p className="mt-3 text-sm leading-6 text-stone-500">
+              View your order history, track delivery
+              status and cancel pending orders.
             </p>
+
+            {/* Active Customer Orders Dashboard Link */}
+            <div className="mt-auto pt-5">
+              <Link
+                href="/dashboard/customer/orders"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#D62828] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#B91C1C]"
+              >
+                View My Orders
+                <ArrowRight size={17} />
+              </Link>
+            </div>
+
           </div>
 
-          {/* Browse Menu */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <Pizza className="mb-4 text-red-600" />
+          {/* =================================
+              DISCOVER PIZZAS CARD
+              ================================= */}
 
-            <h2 className="font-extrabold">
+          <div className="flex flex-col rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
+
+            <Pizza
+              size={25}
+              className="mb-4 text-red-600"
+            />
+
+            <h2 className="font-extrabold text-stone-900">
               Discover Pizzas
             </h2>
 
-            <p className="mt-3 text-sm text-stone-500">
+            <p className="mt-3 text-sm leading-6 text-stone-500">
               Explore your favorite pizzas and restaurants.
             </p>
 
-            <Link
-              href="/menu"
-              className="mt-4 inline-block rounded-xl bg-[#D62828] px-5 py-3 text-sm font-bold text-white"
-            >
-              Browse Menu
-            </Link>
+            {/* Browse Menu Link */}
+            <div className="mt-auto pt-5">
+              <Link
+                href="/menu"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#D62828] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#B91C1C]"
+              >
+                Browse Menu
+                <ArrowRight size={17} />
+              </Link>
+            </div>
+
           </div>
 
         </div>
