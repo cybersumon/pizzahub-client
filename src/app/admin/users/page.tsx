@@ -58,6 +58,7 @@ interface AdminUser {
   emailVerified?: boolean;
   createdAt?: string;
   role: UserRole;
+  isProtectedAdmin?: boolean;
   isBlocked?: boolean;
 
   restaurant: UserRestaurant | null;
@@ -68,6 +69,7 @@ interface UsersApiResponse {
   success: boolean;
   message?: string;
   data?: AdminUser[];
+  canAssignAdmin?: boolean;
 }
 
 // ============================================
@@ -128,6 +130,8 @@ export default function AdminUsersPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [success, setSuccess] = useState("");
+  const [canAssignAdmin, setCanAssignAdmin] = useState(false);
+  const [changingUserId, setChangingUserId] = useState<string | null>(null);
 
   // ==========================================
   // FETCH USERS FROM BACKEND
@@ -160,6 +164,7 @@ export default function AdminUsersPage() {
         }
 
         if (!controller.signal.aborted) {
+          setCanAssignAdmin(result.canAssignAdmin === true);
           setUsers(
             Array.isArray(result.data)
               ? result.data
@@ -213,6 +218,47 @@ export default function AdminUsersPage() {
     setSuccess("User account status updated successfully.");
 
     refreshUsers();
+  }
+
+  // ==========================================
+  // UPDATE USER ROLE
+  // ==========================================
+
+  async function updateUserRole(user: AdminUser, role: UserRole) {
+    if (user.role === role || changingUserId) return;
+    const confirmed = window.confirm(
+      `Change ${user.name}'s role from ${user.role} to ${role}?`
+    );
+    if (!confirmed) return;
+
+    setChangingUserId(user.id);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(
+        `${API_URL}/api/admin/users/${encodeURIComponent(user.id)}/role`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role }),
+        }
+      );
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(`Server returned HTTP ${response.status}, not JSON.`);
+      }
+      const result: { success?: boolean; message?: string } = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Unable to change user role.");
+      }
+      setSuccess(result.message || "User role updated.");
+      refreshUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to change user role.");
+    } finally {
+      setChangingUserId(null);
+    }
   }
 
   // ==========================================
@@ -580,13 +626,33 @@ export default function AdminUsersPage() {
                       {/* ROLE BADGE */}
                       <td className="p-4">
 
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold capitalize ${getRoleClass(
-                            user.role
-                          )}`}
-                        >
-                          {user.role}
-                        </span>
+                        <div className="flex flex-col items-start gap-2">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold capitalize ${getRoleClass(user.role)}`}
+                          >
+                            {user.role}
+                          </span>
+                          {user.isProtectedAdmin ? (
+                            <span className="text-xs font-medium text-purple-700">Protected admin</span>
+                          ) : (
+                            <select
+                              aria-label={`Change role for ${user.name}`}
+                              value={user.role}
+                              disabled={changingUserId !== null || user.isBlocked === true}
+                              onChange={(event) => void updateUserRole(user, event.target.value as UserRole)}
+                              className="max-w-36 rounded-lg border border-stone-200 bg-white px-2 py-2 text-xs font-semibold text-stone-700 disabled:opacity-50"
+                            >
+                              <option value="customer">Customer</option>
+                              <option value="vendor">Vendor</option>
+                              {(canAssignAdmin || user.role === "admin") && (
+                                <option value="admin">Admin</option>
+                              )}
+                            </select>
+                          )}
+                          {changingUserId === user.id && (
+                            <span className="text-xs text-stone-500">Updating...</span>
+                          )}
+                        </div>
 
                       </td>
 

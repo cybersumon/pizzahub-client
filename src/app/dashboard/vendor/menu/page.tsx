@@ -40,7 +40,6 @@ const API_URL =
   process.env.NEXT_PUBLIC_BETTER_AUTH_URL ??
   "http://localhost:7000";
 
-// MongoDB থেকে আসা Menu Item-এর structure।
 interface MenuItem {
   _id: string;
   name: string;
@@ -72,8 +71,6 @@ interface MenuForm {
   image: string;
   isActive: boolean;
 }
-
-// Empty form তৈরি করার function।
 function emptyForm(): MenuForm {
   return {
     name: "",
@@ -84,8 +81,6 @@ function emptyForm(): MenuForm {
     isActive: true,
   };
 }
-
-// API response JSON safely read করার helper।
 async function readApiResponse<T>(
   response: Response
 ): Promise<ApiResponse<T>> {
@@ -112,7 +107,6 @@ export default function VendorMenuPage() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // Page এবং modal-এর error আলাদা রাখছি।
   const [error, setError] = useState("");
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
@@ -170,7 +164,6 @@ export default function VendorMenuPage() {
     }
   }, []);
 
-  // Page load হলে API call।
   useEffect(() => {
     void loadItems();
   }, [loadItems]);
@@ -188,7 +181,6 @@ export default function VendorMenuPage() {
 
     setPreviewUrl(url);
 
-    // Component cleanup হলে temporary URL remove।
     return () => URL.revokeObjectURL(url);
   }, [selectedFile]);
 
@@ -226,7 +218,6 @@ export default function VendorMenuPage() {
     setSelectedFile(null);
     setFormError("");
 
-    // Free plan quota full হলে inactive দিয়ে শুরু।
     setForm({
       ...emptyForm(),
       isActive: !isFree || activeCount < 3,
@@ -243,7 +234,6 @@ export default function VendorMenuPage() {
     setSelectedFile(null);
     setFormError("");
 
-    // Existing data form-এ বসাচ্ছি।
     setForm({
       name: item.name,
       description: item.description,
@@ -307,7 +297,6 @@ export default function VendorMenuPage() {
 
     data.append("image", file);
 
-    // Backend-এ ImgBB API key থাকবে।
     const response = await fetch(
       `${API_URL}/api/upload/image`,
       {
@@ -337,7 +326,6 @@ export default function VendorMenuPage() {
     setFormError("");
     setSuccess("");
 
-    // Add mode-এ image mandatory।
     if (!editingId && !selectedFile) {
       setFormError("Please choose a pizza image.");
       return;
@@ -350,18 +338,14 @@ export default function VendorMenuPage() {
       return;
     }
 
-    // Existing item edit হচ্ছে কি না।
     const existingItem = items.find(
       (item) => item._id === editingId
     );
 
-    // নতুন item activate বা inactive item activate করা হচ্ছে।
     const activating =
       form.isActive &&
       (!existingItem || !existingItem.isActive);
 
-    // Frontend restriction।
-    // Backend-এও একই restriction enforce হচ্ছে।
     if (isFree && activating && activeCount >= 3) {
       setFormError(
         "Free plan supports a maximum of 3 active items."
@@ -372,10 +356,8 @@ export default function VendorMenuPage() {
     setSaving(true);
 
     try {
-      // Edit হলে পুরোনো image ব্যবহার করা যাবে।
       let imageUrl = form.image;
 
-      // নতুন file থাকলে ImgBB upload।
       if (selectedFile) {
         imageUrl = await uploadImage(selectedFile);
       }
@@ -407,7 +389,7 @@ export default function VendorMenuPage() {
 
       const wasEditing = Boolean(editingId);
 
-      // Dialog বন্ধ করছি।
+      // Dialog closeing  
       setDialogOpen(false);
       setSelectedFile(null);
 
@@ -418,7 +400,6 @@ export default function VendorMenuPage() {
           : "Pizza added successfully."
       );
 
-      // Database থেকে latest menu load।
       await loadItems();
     } catch (err) {
       setFormError(
@@ -478,8 +459,6 @@ export default function VendorMenuPage() {
     setSuccess("");
 
     try {
-      // Backend full item validation করে,
-      // তাই সব editable fields পাঠাচ্ছি।
       const response = await fetch(
         `${API_URL}/api/menu/${item._id}`,
         {

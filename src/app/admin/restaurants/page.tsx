@@ -1,18 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 import {
   Store,
-  Users,
   CheckCircle2,
   XCircle,
   Clock3,
   RefreshCw,
   MapPin,
   Phone,
-  ArrowRight,
 } from "lucide-react";
 
 // ============================================
@@ -284,16 +281,6 @@ export default function AdminRestaurantsPage() {
               their approval requests.
             </p>
           </div>
-
-          {/* Admin Users Management Link */}
-          <Link
-            href="/admin/users"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#D62828] px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
-          >
-            <Users size={18} />
-            Manage Users
-            <ArrowRight size={17} />
-          </Link>
 
         </div>
 

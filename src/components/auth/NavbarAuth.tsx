@@ -1,5 +1,7 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+
 // React hooks।
 import { useEffect, useState } from "react";
 
@@ -41,6 +43,7 @@ import {
 
 export default function NavbarAuth() {
   // Current login session।
+  const pathname = usePathname();
   const { data: session, isPending } =
     authClient.useSession();
 
@@ -161,6 +164,19 @@ export default function NavbarAuth() {
 
   const currentProfile =
     profile?.id === user.id ? profile : null;
+    // Keep admins inside the admin workspace.
+const isAdmin =
+  currentProfile?.role === "admin" ||
+  pathname === "/admin" ||
+  pathname.startsWith("/admin/");
+
+// Select the profile route based on the authenticated role.
+const profilePath =
+  currentProfile?.role === "admin" || isAdmin
+    ? "/admin/profile"
+    : currentProfile?.role === "vendor"
+      ? "/dashboard/vendor/profile"
+      : "/profile";
 
   const initials = user.name
     .trim()
@@ -268,13 +284,13 @@ export default function NavbarAuth() {
             ====================================== */}
 
         <DropdownMenuItem
-          render={<Link href="/profile" />}
-          onClick={() => setOpen(false)}
-          className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-stone-700 hover:bg-orange-50"
-        >
-          <UserRound size={17} />
-          My Profile
-        </DropdownMenuItem>
+  render={<Link href={profilePath} />}
+  onClick={() => setOpen(false)}
+  className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-stone-700 hover:bg-orange-50"
+>
+  <UserRound size={17} />
+  My Profile
+</DropdownMenuItem>
 
         <DropdownMenuSeparator />
 

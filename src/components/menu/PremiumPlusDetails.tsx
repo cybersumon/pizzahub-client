@@ -68,7 +68,7 @@ export default function PremiumPlusDetails({
 
         {/* Premium+ Restaurant Badge। */}
         <div className="mb-6">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#D99C47] bg-gradient-to-r from-[#A61515] to-[#C42A22] px-4 py-2 text-sm font-bold text-white shadow-sm">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#D99C47] bg-linear-to-r from-[#A61515] to-[#C42A22] px-4 py-2 text-sm font-bold text-white shadow-sm">
             <Crown size={16} />
             Premium+ Restaurant
           </span>
@@ -81,7 +81,7 @@ export default function PremiumPlusDetails({
         <div className="mb-5 flex items-start gap-4">
 
           {/* PizzaHub Signature Logo Box। */}
-          <div className="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-[24px] bg-gradient-to-br from-[#29110D] to-[#5A271A] text-white shadow-sm">
+          <div className="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-[24px] bg-linear-to-br from-[#29110D] to-[#5A271A] text-white shadow-sm">
             <Pizza
               size={28}
               className="mb-1 text-[#FFB347]"

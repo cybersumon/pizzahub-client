@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -17,6 +17,27 @@ import {
 } from "lucide-react";
 
 type Plan = "premium" | "premium_plus";
+
+type SubscriptionInfo = {
+  restaurantName: string;
+  plan: "free" | "premium" | "premium_plus";
+  subscriptionStatus: string;
+  hasSubscription: boolean;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: string | null;
+  cancelAt: string | null;
+  accessEndsAt: string | null;
+};
+
+function showDate(value: string | null | undefined): string {
+  if (!value) return "Not available";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Dhaka",
+  }).format(date);
+}
+
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -60,6 +81,57 @@ export default function VendorSubscriptionPage() {
     useState<Plan | null>(null);
 
   const [error, setError] = useState("");
+
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [openingPortal, setOpeningPortal] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadSubscription() {
+      try {
+        const response = await fetch(`${API_URL}/api/subscriptions/my`, {
+          credentials: "include", cache: "no-store", signal: controller.signal,
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success || !result.data) {
+          throw new Error(result.message || "Unable to load subscription details.");
+        }
+        if (!controller.signal.aborted) setSubscription(result.data as SubscriptionInfo);
+      } catch (err) {
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : "Subscription request failed.");
+      } finally {
+        if (!controller.signal.aborted) setLoadingSubscription(false);
+      }
+    }
+    void loadSubscription();
+    return () => controller.abort();
+  }, []);
+
+  async function openBillingPortal() {
+    if (openingPortal) return;
+    setOpeningPortal(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_URL}/api/subscriptions/portal`, {
+        method: "POST", credentials: "include",
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Unable to open billing portal.");
+      }
+      const url: unknown = result.data?.url;
+      if (typeof url !== "string") throw new Error("Invalid Stripe portal URL.");
+      const parsed = new URL(url);
+      if (parsed.protocol !== "https:" || parsed.hostname !== "billing.stripe.com") {
+        throw new Error("Invalid Stripe portal domain.");
+      }
+      window.location.assign(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to open Stripe portal.");
+      setOpeningPortal(false);
+    }
+  }
 
   async function startCheckout(plan: Plan) {
     if (loadingPlan) return;
@@ -160,6 +232,48 @@ export default function VendorSubscriptionPage() {
           </div>
         )}
 
+        {/* Verified subscription overview, fetched from the backend */}
+        {loadingSubscription ? (
+          <div className="mb-10 flex items-center justify-center gap-3 rounded-3xl border border-stone-200 bg-white p-8 text-sm text-stone-600">
+            <Loader2 className="h-5 w-5 animate-spin text-red-600" /> Loading subscription...
+          </div>
+        ) : subscription ? (
+          <section className="mb-10 overflow-hidden rounded-3xl border border-[#EAE2D9] bg-white shadow-[0_14px_45px_rgba(42,29,20,0.05)]">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-100 p-6 sm:p-8">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-red-600">Current Membership</p>
+                <h2 className="mt-2 text-2xl font-extrabold">
+                  {subscription.plan === "premium_plus" ? "PizzaHub Premium+" : subscription.plan === "premium" ? "PizzaHub Premium" : "PizzaHub Free"}
+                </h2>
+                <p className="mt-2 text-sm text-stone-500">{subscription.restaurantName}</p>
+              </div>
+              <span className={`rounded-full px-4 py-2 text-xs font-bold ${subscription.cancelAtPeriodEnd && subscription.subscriptionStatus === "active" ? "bg-amber-100 text-amber-800" : subscription.subscriptionStatus === "active" ? "bg-green-100 text-green-700" : "bg-stone-100 text-stone-700"}`}>
+                {subscription.cancelAtPeriodEnd && subscription.subscriptionStatus === "active" ? "Cancellation Scheduled" : subscription.subscriptionStatus === "active" ? "Active Subscription" : subscription.plan === "free" ? "Free Plan" : subscription.subscriptionStatus}
+              </span>
+            </div>
+            {subscription.cancelAtPeriodEnd && subscription.subscriptionStatus === "active" && (
+              <div className="mx-6 mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900 sm:mx-8">
+                <strong>Cancellation scheduled.</strong> Your paid benefits remain available until {showDate(subscription.accessEndsAt ?? subscription.currentPeriodEnd)}.
+              </div>
+            )}
+            <div className="grid gap-5 p-6 sm:grid-cols-2 sm:p-8 lg:grid-cols-4">
+              <div><p className="text-xs text-stone-500">Current Plan</p><p className="mt-2 font-extrabold">{subscription.plan === "premium_plus" ? "Premium+" : subscription.plan === "premium" ? "Premium" : "Free"}</p></div>
+              <div><p className="text-xs text-stone-500">Stripe Status</p><p className="mt-2 font-extrabold capitalize">{subscription.subscriptionStatus}</p></div>
+              <div><p className="text-xs text-stone-500">{subscription.cancelAtPeriodEnd ? "Access Ends" : "Billing Period Ends"}</p><p className="mt-2 font-extrabold">{showDate(subscription.cancelAtPeriodEnd ? subscription.accessEndsAt ?? subscription.currentPeriodEnd : subscription.currentPeriodEnd)}</p></div>
+              <div><p className="text-xs text-stone-500">Menu Limit</p><p className="mt-2 font-extrabold">{subscription.plan === "free" ? "3 items" : "Unlimited"}</p></div>
+            </div>
+            {subscription.hasSubscription && (
+              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-stone-100 bg-[#FCFAF8] px-6 py-5 sm:px-8">
+                <p className="text-xs text-stone-500">Manage your subscription securely through Stripe.</p>
+                <button type="button" disabled={openingPortal} onClick={() => void openBillingPortal()} className="inline-flex items-center gap-2 rounded-xl bg-[#231B18] px-5 py-3 text-sm font-bold text-white hover:bg-stone-800 disabled:opacity-60">
+                  {openingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                  Manage Billing
+                </button>
+              </div>
+            )}
+          </section>
+        ) : null}
+
         {/* Pricing cards */}
         <div className="grid items-stretch gap-6 md:grid-cols-2 lg:gap-8">
           {plans.map((plan) => {
@@ -173,7 +287,7 @@ export default function VendorSubscriptionPage() {
                   "group relative flex h-full flex-col overflow-hidden rounded-[28px] border p-7 transition-all duration-300 sm:p-9",
                   "hover:-translate-y-1.5",
                   isFeatured
-                    ? "border-[#373132] bg-gradient-to-br from-[#292526] via-[#201D1F] to-[#121113] text-white shadow-[0_24px_65px_rgba(25,20,20,0.18)]"
+                    ? "border-[#373132] bg-linear-to-br from-[#292526] via-[#201D1F] to-[#121113] text-white shadow-[0_24px_65px_rgba(25,20,20,0.18)]"
                     : "border-[#EEE8E3] bg-white text-[#231B18] shadow-[0_16px_55px_rgba(51,35,25,0.05)] hover:shadow-[0_25px_65px_rgba(51,35,25,0.10)]",
                 ].join(" ")}
               >
@@ -247,7 +361,7 @@ export default function VendorSubscriptionPage() {
                   className={[
                     "relative mt-7 rounded-2xl border px-5 py-5",
                     isFeatured
-                      ? "border-white/10 bg-white/[0.04]"
+                      ? "border-white/10 bg-white/4"
                       : "border-[#F0EBE6] bg-[#FAF8F6]",
                   ].join(" ")}
                 >
@@ -353,15 +467,19 @@ export default function VendorSubscriptionPage() {
                 {/* Checkout button */}
                 <button
                   type="button"
-                  disabled={loadingPlan !== null}
-                  onClick={() =>
-                    startCheckout(plan.id)
-                  }
+                  disabled={loadingPlan !== null || loadingSubscription || openingPortal}
+                  onClick={() => {
+                    if (subscription?.hasSubscription) {
+                      void openBillingPortal();
+                    } else {
+                      void startCheckout(plan.id);
+                    }
+                  }}
                   className={[
                     "relative mt-10 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold transition-all duration-200",
                     "disabled:cursor-not-allowed disabled:opacity-60",
                     isFeatured
-                      ? "bg-gradient-to-r from-amber-300 to-amber-400 text-[#211B16] shadow-[0_10px_25px_rgba(251,191,36,0.12)] hover:from-amber-200 hover:to-amber-300"
+                      ? "bg-linear-to-r from-amber-300 to-amber-400 text-[#211B16] shadow-[0_10px_25px_rgba(251,191,36,0.12)] hover:from-amber-200 hover:to-amber-300"
                       : "bg-red-600 text-white shadow-[0_10px_25px_rgba(220,38,38,0.12)] hover:bg-red-700",
                   ].join(" ")}
                 >
@@ -372,7 +490,7 @@ export default function VendorSubscriptionPage() {
                     </>
                   ) : (
                     <>
-                      Choose {plan.name}
+                      {subscription?.hasSubscription ? "Manage / Update Subscription" : `Choose ${plan.name}`}
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </>
                   )}
