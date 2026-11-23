@@ -7,10 +7,20 @@ import type { NextConfig } from "next";
 
 // Next.js forwards browser API requests to Express.
 // Use a separate server-side variable for this URL.
+// Read the backend URL and remove extra whitespace.
 const backendUrl = (
   process.env.PIZZAHUB_BACKEND_URL ||
   "http://localhost:7000"
-).replace(/\/+$/, "");
+)
+  .trim()
+  .replace(/\/+$/, "");
+
+// Validate the backend URL before creating rewrites.
+if (!/^https?:\/\//.test(backendUrl)) {
+  throw new Error(
+    "PIZZAHUB_BACKEND_URL must start with http:// or https://"
+  );
+}
 
 const nextConfig: NextConfig = {
   // ==========================================
