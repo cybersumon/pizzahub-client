@@ -236,19 +236,101 @@ export default function VendorDashboardPage() {
   // PROFILE VALIDATION
   // ==========================================
 
-  if (!profile || !profile.restaurant) {
+  // Display authentication or authorization errors separately.
+  if (!profile) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[#FFF9F2] px-4 text-center">
-        <h1 className="text-xl font-bold text-red-600">
-          {error || "Restaurant not available."}
-        </h1>
+      <main className="flex min-h-screen items-center justify-center bg-[#FFF9F2] px-4 py-12">
+        <div className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm">
+          <ShieldCheck size={36} className="mx-auto text-red-600" />
+          <h1 className="mt-5 text-xl font-extrabold text-stone-900">
+            Vendor Dashboard Unavailable
+          </h1>
+          <p role="alert" className="mt-3 text-sm leading-6 text-red-600">
+            {error || "Unable to load vendor profile."}
+          </p>
+          <Link
+            href="/sign-in"
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-[#D62828] px-5 py-3 text-sm font-bold text-white hover:bg-[#B91C1C]"
+          >
+            Sign In
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
-        <Link
-          href="/sign-in"
-          className="mt-4 inline-block text-sm font-bold text-red-600 hover:underline"
-        >
-          Sign In
-        </Link>
+  // An assigned vendor may not have created a restaurant yet.
+  if (!profile.restaurant) {
+    return (
+      <main className="min-h-screen bg-[#FFF9F2] px-4 py-12 sm:py-20">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+            <Link href="/" className="text-xl font-extrabold text-[#D62828]">
+              PizzaHub
+            </Link>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50"
+            >
+              <LogOut size={17} /> Sign Out
+            </button>
+          </div>
+
+          <section className="relative overflow-hidden rounded-3xl border border-orange-100 bg-white p-7 shadow-[0_18px_60px_rgba(100,54,22,0.07)] sm:p-11">
+            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-orange-100/70 blur-3xl" />
+            <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-red-500 to-[#B91C1C] text-white shadow-[0_12px_24px_rgba(214,40,40,0.20)]">
+              <Store size={38} strokeWidth={1.8} />
+            </div>
+            <div className="relative mt-7 text-center">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#D62828]">
+                PizzaHub Vendor Onboarding
+              </p>
+              <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">
+                Welcome to PizzaHub!
+              </h1>
+              <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-stone-500">
+                Your vendor account is ready, {profile.name}. Set up your restaurant
+                profile and submit it for admin approval to start managing your menu and orders.
+              </p>
+            </div>
+
+            <div className="relative mt-8 space-y-3 rounded-2xl border border-orange-100 bg-[#FFF9F2] p-5 sm:p-6">
+              <div className="flex items-center gap-3 text-sm font-semibold text-emerald-700">
+                <CheckCircle2 size={20} className="shrink-0" />
+                Vendor role activated
+              </div>
+              <div className="flex items-center gap-3 text-sm font-medium text-stone-700">
+                <Store size={20} className="shrink-0 text-orange-600" />
+                Create your restaurant profile
+              </div>
+              <div className="flex items-center gap-3 text-sm font-medium text-stone-700">
+                <Clock3 size={20} className="shrink-0 text-orange-600" />
+                Wait for admin approval
+              </div>
+              <div className="flex items-center gap-3 text-sm font-medium text-stone-700">
+                <Pizza size={20} className="shrink-0 text-orange-600" />
+                Start managing your menu and orders
+              </div>
+            </div>
+
+            {error && (
+              <p role="alert" className="mt-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+                {error}
+              </p>
+            )}
+
+            <Link
+              href="/restaurant/setup"
+              className="relative mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#D62828] px-6 py-4 text-sm font-bold text-white shadow-[0_10px_20px_rgba(214,40,40,0.15)] transition hover:bg-[#B91C1C]"
+            >
+              Set Up My Restaurant <ArrowRight size={18} />
+            </Link>
+            <p className="mt-4 text-center text-xs leading-5 text-stone-400">
+              Your restaurant will remain pending until an admin approves it.
+            </p>
+          </section>
+        </div>
       </main>
     );
   }
@@ -448,6 +530,34 @@ export default function VendorDashboardPage() {
           </p>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
+
+
+            {/* Restaurant Profile Management */}
+<div className="flex flex-col rounded-xl border border-stone-200 p-5 transition hover:border-orange-200 hover:shadow-sm">
+  <Store
+    size={25}
+    className="mb-3 text-red-600"
+  />
+
+  <h3 className="font-bold text-stone-900">
+    Restaurant Profile
+  </h3>
+
+  <p className="mt-2 text-sm text-stone-500">
+    Update your restaurant name, logo,
+    address, phone and description.
+  </p>
+
+  <div className="mt-auto pt-5">
+    <Link
+      href="/restaurant/setup"
+      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#D62828] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#B91C1C]"
+    >
+      Edit Restaurant
+      <ArrowRight size={17} />
+    </Link>
+  </div>
+</div>
 
             {/* =================================
                 MANAGE MENU CARD
